@@ -32,7 +32,9 @@
     var pages = [],
     thisPage, firstCallback, firstProgress;
 
-    function requestRecursive(uri, callback, progress) {
+    function requestRecursive(uri, callback, progress, options) {
+
+      options = options || {};
 
       if (callback) {
         firstCallback = callback;
@@ -46,7 +48,7 @@
 
         thisPage = JSON.parse(r.responseText);
 
-        pages = pages.concat(thisPage.features);
+        pages = pages.concat(thisPage.features || thisPage.response.features);
 
         if (thisPage.next) {
 

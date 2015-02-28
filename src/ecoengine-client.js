@@ -67,12 +67,16 @@
 
       recursiveRequests[id] = {
         "id"  : id,
-        "xhr" : request(uri, function(e, r) {
+        "xhr" : request(uri, function(err, r) {
+
+          if (err) {
+            firstCallback(err);
+          }
 
           try {
             thisPage = JSON.parse(r.responseText);
           } catch (err) {
-            firstCallback(null);
+            firstCallback(err);
           }
 
           pages = pages.concat(thisPage.features || thisPage.response.features);
@@ -84,12 +88,12 @@
 
           if (thisPage.next && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
 
-            firstProgress(pages);
+            firstProgress(null, pages);
             requestRecursive(thisPage.next, null, null, {"appendTo":id});
 
           } else {
 
-            firstCallback(pages);
+            firstCallback(null, pages);
             delete recursiveRequests[id];
             pages = [];
 
@@ -112,7 +116,7 @@
 
       if (recursiveRequests[id] && recursiveRequests[id].xhr) {
 
-        recursiveRequests[id].callback(null);
+        recursiveRequests[id].callback();
 
         recursiveRequests[id].xhr.abort();
 

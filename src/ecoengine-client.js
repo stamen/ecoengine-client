@@ -77,6 +77,11 @@
 
           pages = pages.concat(thisPage.features || thisPage.response.features);
 
+          that.fire("page-recieved", {
+            "data"   : pages,
+            "target" : recursiveRequests[id]
+          });
+
           if (thisPage.next && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
 
             firstProgress(pages);
@@ -137,7 +142,7 @@
     window.STMN = {};
   }
 
-  window.STMN.EcoengineClient = EcoengineClient;
+  window.STMN.EcoengineClient = STPX.samesies.extend(EcoengineClient);
 
   //
   // Make available to CommonJS
@@ -147,7 +152,7 @@
 
   // Make available to AMD module
   } else if (typeof define === "function" && define.amd) {
-    define(STMN.EcoengineClient);
+    define(["samesies"], STMN.EcoengineClient);
   }
 
 }());

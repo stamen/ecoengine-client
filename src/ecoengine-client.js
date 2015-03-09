@@ -48,8 +48,7 @@
       }
     }
 
-    var pages = [],
-    thisPage, firstCallback, firstProgress;
+    var thisPage, firstCallback, firstProgress;
 
     function requestRecursive(uri, callback, progress, options) {
 
@@ -57,51 +56,58 @@
 
       var id = options.appendTo || getUniqueId();
 
-      if (callback) {
-        firstCallback = callback;
+      if (!recursiveRequests[id]) {
+        recursiveRequests[id] = [];
       }
 
-      if (progress) {
-        firstProgress = progress;
-      }
+      //console.log(id);
 
-      recursiveRequests[id] = {
+      recursiveRequests[id].push({
         "id"  : id,
         "xhr" : request(uri, function(err, r) {
 
           if (err) {
-            firstCallback(err);
+            return recursiveRequests[id][0].callback(err);
           }
 
           try {
             thisPage = JSON.parse(r.responseText);
           } catch (err) {
-            firstCallback(err);
+            return recursiveRequests[id][0].callback(err);
           }
 
-          pages = pages.concat(thisPage.features || thisPage.response.features);
+          if (!recursiveRequests[id].pages) {
+            recursiveRequests[id].pages = [];
+          }
+
+          recursiveRequests[id].pages = recursiveRequests[id].pages.concat(thisPage.features || thisPage.response.features);
 
           that.fire("page-recieved", {
-            "data"   : pages,
+            "data"   : recursiveRequests[id].pages,
             "target" : recursiveRequests[id]
           });
 
           if (thisPage.next && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
 
-            firstProgress(null, pages);
-            requestRecursive(thisPage.next, null, null, {"appendTo":id});
+            recursiveRequests[id][0].progress(null, recursiveRequests[id].pages);
+
+            setTimeout(function() {
+              requestRecursive(thisPage.next, null, null, {"appendTo":id});
+            }, 100);
 
           } else {
 
-            firstCallback(null, pages);
+            recursiveRequests[id][0].callback(null, recursiveRequests[id].pages);
             delete recursiveRequests[id];
-            pages = [];
 
           }
 
         }),
-        "callback" : firstCallback
-      };
+        "callback" : callback || recursiveRequests[id][0].callback,
+        "progress" : progress || recursiveRequests[id][0].progress
+      });
+
+      //console.log(recursiveRequests[id]);
 
       return recursiveRequests[id];
 
@@ -114,13 +120,16 @@
     //
     function stopRecursiveRequest(id) {
 
-      if (recursiveRequests[id] && recursiveRequests[id].xhr) {
+      if (recursiveRequests[id] && recursiveRequests[id][0].xhr) {
 
-        recursiveRequests[id].callback();
+        recursiveRequests[id].forEach(function(req) {
 
-        recursiveRequests[id].xhr.abort();
+          req.callback();
 
-        recursiveRequests[id] = false;
+          req.xhr.abort();
+
+          req = false;
+        });
 
       } else {
         return false;

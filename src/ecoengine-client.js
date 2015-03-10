@@ -64,15 +64,18 @@
 
       recursiveRequests[id].push({
         "id"  : id,
-        "xhr" : request(uri, function(err, r) {
+        "uri" : uri,
+        "xhr" : request(recursiveRequests[id][0] ? recursiveRequests[id][0].uri : uri, function(err, r) {
 
           if (err) {
+            stopRecursiveRequest(id);
             return recursiveRequests[id][0].callback(err);
           }
 
           try {
             thisPage = JSON.parse(r.responseText);
           } catch (err) {
+            stopRecursiveRequest(id);
             return recursiveRequests[id][0].callback(err);
           }
 
@@ -87,7 +90,7 @@
             "target" : recursiveRequests[id]
           });
 
-          if (thisPage.next && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
+          if (thisPage.next && thisPage.next !== "null" && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
 
             recursiveRequests[id][0].progress(null, recursiveRequests[id].pages);
 
@@ -130,6 +133,8 @@
 
           req = false;
         });
+
+        recursiveRequests[id] = false;
 
       } else {
         return false;

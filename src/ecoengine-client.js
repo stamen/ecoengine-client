@@ -67,47 +67,49 @@
         "uri" : uri,
         "xhr" : request(recursiveRequests[id][0] ? recursiveRequests[id][0].uri : uri, function(err, r) {
 
-          if (err) {
-            stopRecursiveRequest(id);
-            return recursiveRequests[id][0].callback(err);
-          }
+          if (recursiveRequests[id][0] && recursiveRequests[id][0].callback) {
+            if (err) {
+              stopRecursiveRequest(id);
+              return recursiveRequests[id][0].callback(err);
+            }
 
-          try {
-            thisPage = JSON.parse(r.responseText);
-          } catch (err) {
-            stopRecursiveRequest(id);
-            return recursiveRequests[id][0].callback(err);
-          }
+            try {
+              thisPage = JSON.parse(r.responseText);
+            } catch (err) {
+              stopRecursiveRequest(id);
+              return recursiveRequests[id][0].callback(err);
+            }
 
-          if (!recursiveRequests[id].pages) {
-            recursiveRequests[id].pages = [];
-          }
+            if (!recursiveRequests[id].pages) {
+              recursiveRequests[id].pages = [];
+            }
 
-          recursiveRequests[id].pages = recursiveRequests[id].pages.concat(thisPage.features || thisPage.response.features);
+            recursiveRequests[id].pages = recursiveRequests[id].pages.concat(thisPage.features || thisPage.response.features);
 
-          that.fire("page-recieved", {
-            "data"   : recursiveRequests[id].pages,
-            "target" : recursiveRequests[id]
-          });
+            that.fire("page-recieved", {
+              "data"   : recursiveRequests[id].pages,
+              "target" : recursiveRequests[id]
+            });
 
-          if (thisPage.next && thisPage.next !== "null" && recursiveRequests[id]) { //Don't continue if this requst has been deleted from the recursiveRequests object
+            if (thisPage.next && thisPage.next !== "null" && recursiveRequests[id] && recursiveRequests[id][0]) { //Don't continue if this requst has been deleted from the recursiveRequests object
 
-            recursiveRequests[id][0].progress(null, recursiveRequests[id].pages);
+              recursiveRequests[id][0].progress(null, recursiveRequests[id].pages);
 
-            setTimeout(function() {
-              requestRecursive(thisPage.next, null, null, {"appendTo":id});
-            }, 100);
+              setTimeout(function() {
+                requestRecursive(thisPage.next, null, null, {"appendTo":id});
+              }, 100);
 
-          } else {
+            } else {
 
-            recursiveRequests[id][0].callback(null, recursiveRequests[id].pages);
-            delete recursiveRequests[id];
+              recursiveRequests[id][0].callback(null, recursiveRequests[id].pages);
+              delete recursiveRequests[id];
 
+            }
           }
 
         }),
-        "callback" : callback || recursiveRequests[id][0].callback,
-        "progress" : progress || recursiveRequests[id][0].progress
+        "callback" : (callback || (recursiveRequests[id][0] ? recursiveRequests[id][0].callback : null)),
+        "progress" : (progress || (recursiveRequests[id][0] ? recursiveRequests[id][0].progress : null))
       });
 
       //console.log(recursiveRequests[id]);

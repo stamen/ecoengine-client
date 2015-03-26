@@ -41,6 +41,7 @@
         };
 
         xmlHttp.open("GET", uri, true);
+        xmlHttp.setRequestHeader('Accept', 'application/vnd.geo+json');
         xmlHttp.send();
         return xmlHttp;
       } else {
@@ -65,7 +66,7 @@
       recursiveRequests[id].push({
         "id"  : id,
         "uri" : uri,
-        "xhr" : request(recursiveRequests[id][0] ? recursiveRequests[id][0].uri : uri, function(err, r) {
+        "xhr" : request(uri, function(err, r) {
 
           if (recursiveRequests[id][0] && recursiveRequests[id][0].callback) {
             if (err) {
